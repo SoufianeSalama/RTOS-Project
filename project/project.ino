@@ -6,6 +6,10 @@ short int distanceSensor1Echo = 4;
 //short int distanceSensor1Trig = 5;
 short int distanceSensor2Echo = 6;
 //short int distanceSensor2Trig = 7;
+short int distanceWarningThreshold = 10; 
+short int distanceAlarmThreshold = 5; 
+short int gasWarningThreshold = 130; 
+short int gasAlarmThreshold = 150;
 /// END VARIABELES
 
 /// TASKS
@@ -20,7 +24,7 @@ void setup() {
   }
 
   /// CREATE TASKS
-  /*xTaskCreate(
+  xTaskCreate(
     TaskDistanceSensor
     ,  (const portCHAR *)"DistanceSensor1"  
     ,  128  
@@ -36,7 +40,7 @@ void setup() {
     ,  (void*)&distanceSensor2Echo
     ,  2  
     ,  NULL
-    );*/
+    );
 
     xTaskCreate(
     TaskGasSensor
@@ -80,32 +84,54 @@ void TaskDistanceSensor(void *pvParameters){
     
     if(distanceSensorEcho == 4){
       // Dit is sensor 1
-      Serial.print("Dit is Distance Sensor 1");
+      /*Serial.print("Dit is Distance Sensor 1");
       Serial.print("--->De afstand(cm) is: ");
-      Serial.println(distance);
+      Serial.println(distance);*/
+      if (distance<distanceWarningThreshold && distance>distanceAlarmThreshold){
+        Serial.print("Distance Sensor 1 -> WARNING");
+        Serial.println();
+      }
+      else if(distance<distanceAlarmThreshold){
+        Serial.print("Distance Sensor 1 -> ALARM");
+        Serial.println();
+      }
     }
     else if(distanceSensorEcho == 6){
       // Dit is sensor 2
-      Serial.print("Dit is Distance Sensor 2");
+      /*Serial.print("Dit is Distance Sensor 2");
       Serial.print("--->De afstand(cm) is: ");
-      Serial.println(distance);
+      Serial.println(distance);*/
+      if (distance<distanceWarningThreshold && distance>distanceAlarmThreshold){
+        Serial.print("Distance Sensor 2 -> WARNING");
+        Serial.println();
+      }
+      else if(distance<distanceAlarmThreshold){
+        Serial.print("Distance Sensor 2 -> ALARM");
+        Serial.println();
+      }
     }
-    
- 
     vTaskDelay( 500 / portTICK_PERIOD_MS );
   }
 
 }
 
-void TaskGasSensor(void *pvParameters)  // This is a task.
+void TaskGasSensor(void *pvParameters)  
 {
   (void) pvParameters;
   for (;;)
   {
     int gasValue = analogRead(A0);
-    Serial.print("Dit is Gas Sensor ");
+    /*Serial.print("Dit is Gas Sensor ");
     Serial.print("--->De waarde is: ");
-    Serial.println(gasValue);
-    vTaskDelay(1); 
+    Serial.println(gasValue);*/
+    if (gasValue>gasWarningThreshold && gasValue<gasAlarmThreshold){
+      Serial.print("Gas Sensor -> WARNING");
+      Serial.println();
+    }
+    else if(gasValue>gasAlarmThreshold){
+      Serial.print("Gas Sensor -> ALARM");
+      Serial.println();
+    }
+    vTaskDelay( 500 / portTICK_PERIOD_MS );
   }
 }
