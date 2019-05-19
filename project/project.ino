@@ -10,7 +10,7 @@ short int distanceSensor2Echo = 6;
 
 /// TASKS
 void TaskDistanceSensor(void *pvParameters);
-
+void TaskGasSensor(void *pvParameters);
 /// END TASKS
 
 void setup() {
@@ -20,7 +20,7 @@ void setup() {
   }
 
   /// CREATE TASKS
-  xTaskCreate(
+  /*xTaskCreate(
     TaskDistanceSensor
     ,  (const portCHAR *)"DistanceSensor1"  
     ,  128  
@@ -34,6 +34,15 @@ void setup() {
     ,  (const portCHAR *)"DistanceSensor2"  
     ,  128  
     ,  (void*)&distanceSensor2Echo
+    ,  2  
+    ,  NULL
+    );*/
+
+    xTaskCreate(
+    TaskGasSensor
+    ,  (const portCHAR *)"GasSensor"  
+    ,  128  
+    ,  NULL
     ,  2  
     ,  NULL
     );
@@ -71,15 +80,13 @@ void TaskDistanceSensor(void *pvParameters){
     
     if(distanceSensorEcho == 4){
       // Dit is sensor 1
-      Serial.print("Dit is Distance Sensor 1:");
-      Serial.println();
+      Serial.print("Dit is Distance Sensor 1");
       Serial.print("--->De afstand(cm) is: ");
       Serial.println(distance);
     }
     else if(distanceSensorEcho == 6){
       // Dit is sensor 2
-      Serial.print("Dit is Distance Sensor 2:");
-      Serial.println();
+      Serial.print("Dit is Distance Sensor 2");
       Serial.print("--->De afstand(cm) is: ");
       Serial.println(distance);
     }
@@ -88,4 +95,17 @@ void TaskDistanceSensor(void *pvParameters){
     vTaskDelay( 500 / portTICK_PERIOD_MS );
   }
 
+}
+
+void TaskGasSensor(void *pvParameters)  // This is a task.
+{
+  (void) pvParameters;
+  for (;;)
+  {
+    int gasValue = analogRead(A0);
+    Serial.print("Dit is Gas Sensor ");
+    Serial.print("--->De waarde is: ");
+    Serial.println(gasValue);
+    vTaskDelay(1); 
+  }
 }
