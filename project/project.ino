@@ -1,5 +1,6 @@
 #include <Arduino_FreeRTOS.h>
 #include <queue.h>
+#include <SoftwareSerial.h>
 QueueHandle_t queue;
 
 /// VARIABELES
@@ -7,8 +8,8 @@ short int distanceSensor1Echo = 4;
 //short int distanceSensor1Trig = 5;
 short int distanceSensor2Echo = 6;
 //short int distanceSensor2Trig = 7;
-short int distanceWarningThreshold = 10; 
-short int distanceAlarmThreshold = 5; 
+short int distanceWarningThreshold = 15; 
+short int distanceAlarmThreshold = 10; 
 short int gasWarningThreshold = 130; 
 short int gasAlarmThreshold = 150;
 short int Motor1 = 8;
@@ -16,6 +17,8 @@ struct alarmMessage{
   int sensor; //1=distancesensor1, 2=distancesensor2, 3=gassensor
   int statusmessage;// 1=ok, 2=alarm
 };
+
+SoftwareSerial EEBlue(12, 13); // RX | TX
 /// END VARIABELES
 
 /// TASKS
@@ -26,6 +29,7 @@ void TaskMotors(void *pvParameters);
 
 void setup() {
   Serial.begin(9600);
+  EEBlue.begin(9600); 
   while (!Serial) {
     ; // wait for serial port to connect. Needed for native USB, on LEONARDO, MICRO, YUN, and other 32u4 based boards.
   }
@@ -57,7 +61,7 @@ void setup() {
     xTaskCreate(
     TaskGasSensor
     ,  (const portCHAR *)"GasSensor"  
-    ,  75//128  
+    ,  90//128  
     ,  NULL
     ,  1  
     ,  NULL
@@ -252,6 +256,8 @@ void TaskGasSensor(void *pvParameters)
     else if(gasValue>gasAlarmThreshold){
       Serial.print("Gas Sensor -> ALARM");
       Serial.println();
+
+      EEBlue.write("Gas detected\n");
     }
     vTaskDelay( 500 / portTICK_PERIOD_MS );
   }
