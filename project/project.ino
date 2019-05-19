@@ -14,7 +14,7 @@ short int gasAlarmThreshold = 150;
 short int Motor1 = 8;
 struct alarmMessage{
   int sensor; //1=distancesensor1, 2=distancesensor2, 3=gassensor
-  int statusmessage;// 1=ok, 2=warning, 3=alarm,
+  int statusmessage;// 1=ok, 2=alarm
 };
 /// END VARIABELES
 
@@ -39,7 +39,7 @@ void setup() {
   xTaskCreate(
     TaskDistanceSensor
     ,  (const portCHAR *)"DistanceSensor1"  
-    ,  80//128  
+    ,  90//128  
     ,  (void*)&distanceSensor1Echo
     ,  2  
     ,  NULL
@@ -48,7 +48,7 @@ void setup() {
   xTaskCreate(
     TaskDistanceSensor
     ,  (const portCHAR *)"DistanceSensor2"  
-    ,  80//128  
+    ,  90//128  
     ,  (void*)&distanceSensor2Echo
     ,  2  
     ,  NULL
@@ -57,16 +57,16 @@ void setup() {
     xTaskCreate(
     TaskGasSensor
     ,  (const portCHAR *)"GasSensor"  
-    ,  80//128  
+    ,  75//128  
     ,  NULL
-    ,  2  
+    ,  1  
     ,  NULL
     );
     
   xTaskCreate(
     TaskMotors
     ,  (const portCHAR *)"Motors"  
-    ,  80//128  
+    ,  105//128  
     ,  (void*)&Motor1
     ,  2  
     ,  NULL
@@ -87,39 +87,79 @@ void TaskMotors(void *pvParameters){
   pinMode(motor3, OUTPUT); 
   pinMode(motor4, OUTPUT);
   int blinkduration = 1000; //1sec
+  short int distance1Flag;
+  short int distance2Flag = 0;
+  
   alarmMessage element;
   for (;;)
   {
     xQueueReceive(queue, &element, portMAX_DELAY);
-    if (element.sensor == 1){
-      // Distance Sensor 1 heeft object gedetecteerd
-      // Vlieg andere richting -> Motor 3 en 4 op HIGH Speed
-      digitalWrite(motor1, LOW);
-      digitalWrite(motor2, LOW);
-      digitalWrite(motor3, HIGH);
-      digitalWrite(motor4, HIGH);
-    }
-    else if (element.sensor == 2){
-      // Distance Sensor 2 heeft object gedetecteerd
-      // Vlieg andere richting -> Motor 1 en 2 op HIGH Speed
-      digitalWrite(motor1, HIGH);
-      digitalWrite(motor2, HIGH);
-      digitalWrite(motor3, LOW);
-      digitalWrite(motor4, LOW);
-    }
-    else{
-      /*digitalWrite(motor1, HIGH);
-      digitalWrite(motor2, HIGH);
-      digitalWrite(motor3, HIGH);
-      digitalWrite(motor4, HIGH);
-      delay(1000);
-      digitalWrite(motor1, LOW);
-      digitalWrite(motor2, LOW);
-      digitalWrite(motor3, LOW);
-      digitalWrite(motor4, LOW);
-      delay(1000);*/
-    }
+    /*Serial.print("Message from sensor: ");
+    Serial.print(element.sensor);
+    Serial.print(" with message: ");
+    Serial.print(element.statusmessage);
+    Serial.println();*/
+      if (element.sensor == 1 && element.statusmessage==2){
+        // Distance Sensor 1 heeft object gedetecteerd ALARM
+        // Vlieg andere richting -> Motor 3 en 4 op HIGH Speed
+        distance1Flag = 1;
+        /*Serial.print("Distance flag 1 is HOOG");
+        Serial.println();*/
+      }
+      if (element.sensor == 2 && element.statusmessage==2){
+        // Distance Sensor 2 heeft object gedetecteerd
+        // Vlieg andere richting -> Motor 1 en 2 op HIGH Speed
+        distance2Flag = 1;
+        /*Serial.print("Distance flag 2 is HOOG");
+        Serial.println();*/
+      }
+      if (element.sensor == 1 && element.statusmessage == 1){
+        distance1Flag = 0;
+        /*Serial.print("Distance flag 1 is LAAG");
+        Serial.println();*/
+      }
+      if (element.sensor == 2 && element.statusmessage == 1){
+        distance2Flag = 0;
+        /*Serial.print("Distance flag 2 is LAAG");
+        Serial.println();*/
+      }
 
+      if (distance1Flag == 0 && distance2Flag == 0){
+        digitalWrite(motor1, HIGH);
+        digitalWrite(motor2, HIGH);
+        digitalWrite(motor3, HIGH);
+        digitalWrite(motor4, HIGH);
+        vTaskDelay( 250 / portTICK_PERIOD_MS );
+        digitalWrite(motor1, LOW);
+        digitalWrite(motor2, LOW);
+        digitalWrite(motor3, LOW);
+        digitalWrite(motor4, LOW);
+        vTaskDelay( 250 / portTICK_PERIOD_MS );
+      }
+      else if(distance1Flag == 1 && distance2Flag == 0){
+        digitalWrite(motor1, LOW);
+        digitalWrite(motor2, LOW);
+        digitalWrite(motor3, HIGH);
+        digitalWrite(motor4, HIGH);
+      }
+      else if(distance2Flag == 1 && distance1Flag == 0){
+        digitalWrite(motor1, HIGH);
+        digitalWrite(motor2, HIGH);
+        digitalWrite(motor3, LOW);
+        digitalWrite(motor4, LOW);
+      }
+      else if (distance1Flag == 1 && distance2Flag == 1){
+        digitalWrite(motor1, HIGH);
+        digitalWrite(motor2, HIGH);
+        digitalWrite(motor3, HIGH);
+        digitalWrite(motor4, HIGH);
+        vTaskDelay( 100 / portTICK_PERIOD_MS );
+        digitalWrite(motor1, LOW);
+        digitalWrite(motor2, LOW);
+        digitalWrite(motor3, LOW);
+        digitalWrite(motor4, LOW);
+        vTaskDelay( 100 / portTICK_PERIOD_MS );
+      }
   }
   
 }
@@ -150,46 +190,46 @@ void TaskDistanceSensor(void *pvParameters){
       /*Serial.print("Dit is Distance Sensor 1");
       Serial.print("--->De afstand(cm) is: ");
       Serial.println(distance);*/
-      if (distance<distanceWarningThreshold && distance>distanceAlarmThreshold){
+      /*if (distance<distanceWarningThreshold && distance>distanceAlarmThreshold){
         Serial.print("Distance Sensor 1 -> WARNING");
         Serial.println();
         alarmMessage am = { 1, 2};
         xQueueSend(queue, &am, portMAX_DELAY);
-      }
-      else if(distance<distanceAlarmThreshold){
+      }*/
+      if(distance<=distanceAlarmThreshold){
         Serial.print("Distance Sensor 1 -> ALARM");
         Serial.println();
-        alarmMessage am = { 1, 3};
+        alarmMessage am = { 1, 2};
         xQueueSend(queue, &am, portMAX_DELAY);
       }
-      /*else{
+      else if(distance>distanceAlarmThreshold){
         // Distance ok
         alarmMessage am = { 1, 1};
         xQueueSend(queue, &am, portMAX_DELAY);
-      }*/
+      }
     }
     else if(distanceSensorEcho == 6){
       // Dit is sensor 2
       /*Serial.print("Dit is Distance Sensor 2");
       Serial.print("--->De afstand(cm) is: ");
       Serial.println(distance);*/
-      if (distance<distanceWarningThreshold && distance>distanceAlarmThreshold){
+      /*if (distance<distanceWarningThreshold && distance>distanceAlarmThreshold){
         Serial.print("Distance Sensor 2 -> WARNING");
         Serial.println();
         alarmMessage am = { 2, 2};
         xQueueSend(queue, &am, portMAX_DELAY);
-      }
-      else if(distance<distanceAlarmThreshold){
+      }*/
+      if(distance<distanceAlarmThreshold){
         Serial.print("Distance Sensor 2 -> ALARM");
         Serial.println();
-        alarmMessage am = { 2, 3};
+        alarmMessage am = { 2, 2};
         xQueueSend(queue, &am, portMAX_DELAY);
       }
-      /*else{
+      else if(distance>distanceAlarmThreshold){
         // Distance ok
         alarmMessage am = { 2, 1};
         xQueueSend(queue, &am, portMAX_DELAY);
-      }*/
+      }
     }
     vTaskDelay( 500 / portTICK_PERIOD_MS );
   }
