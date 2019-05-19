@@ -10,11 +10,13 @@ short int distanceWarningThreshold = 10;
 short int distanceAlarmThreshold = 5; 
 short int gasWarningThreshold = 130; 
 short int gasAlarmThreshold = 150;
+short int Motor1 = 8;
 /// END VARIABELES
 
 /// TASKS
 void TaskDistanceSensor(void *pvParameters);
 void TaskGasSensor(void *pvParameters);
+void TaskMotors(void *pvParameters);
 /// END TASKS
 
 void setup() {
@@ -50,10 +52,45 @@ void setup() {
     ,  2  
     ,  NULL
     );
+    
+  xTaskCreate(
+    TaskMotors
+    ,  (const portCHAR *)"Motors"  
+    ,  128  
+    ,  (void*)&Motor1
+    ,  2  
+    ,  NULL
+    );
 }
 
 void loop() {
   // LEEG
+}
+void TaskMotors(void *pvParameters){
+  (void) pvParameters;
+  short int motor1 = (*((short int*)pvParameters));
+  short int motor2 = motor1 + 1;
+  short int motor3 = motor1 + 2;
+  short int motor4 = motor1 + 3;
+  pinMode(motor1, OUTPUT);
+  pinMode(motor2, OUTPUT);
+  pinMode(motor3, OUTPUT); 
+  pinMode(motor4, OUTPUT);
+  int blinkduration = 1000; //1sec
+  for (;;)
+  {
+    digitalWrite(motor1, HIGH);
+    digitalWrite(motor2, HIGH);
+    digitalWrite(motor3, HIGH);
+    digitalWrite(motor4, HIGH);
+    delay(1000);
+    digitalWrite(motor1, LOW);
+    digitalWrite(motor2, LOW);
+    digitalWrite(motor3, LOW);
+    digitalWrite(motor4, LOW);
+    delay(1000);
+  }
+  
 }
 
 void TaskDistanceSensor(void *pvParameters){
